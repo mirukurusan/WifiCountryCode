@@ -1,70 +1,75 @@
 package io.github.mirukurusan.wificountrycode.config
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
-import de.robv.android.xposed.XSharedPreferences
-import io.github.mirukurusan.wificountrycode.BuildConfig
+import androidx.core.content.edit
+import io.github.libxposed.service.XposedService
+import io.github.libxposed.service.XposedServiceHelper
 import io.github.mirukurusan.wificountrycode.ContextAmbient
 import io.github.mirukurusan.wificountrycode.data.Configuration
 
 /**
- * Hook configuration storage manager
+ * Hook configuration storage manager using LibXposed RemotePreferences
  */
 object HookConfig {
     const val TAG = "HookConfig"
-    private const val PREF_NAME = "wifi_country_code_config"
-    private const val KEY_CONFIG = "config"
+    const val PREF_NAME = "wifi_country_code_config"
+    const val KEY_CONFIG = "config"
 
-    // Used in Xposed module environment (during hook process) to read configuration
-    object XPOSED {
-        private val xSharedPref by lazy {
-            XSharedPreferences(
-                BuildConfig.APPLICATION_ID,
-                PREF_NAME
-            )
-        }
+    @Volatile
+    private var sharedService: XposedService? = null
 
-        fun get(): Configuration {
-            Log.d(TAG, "Reading config from XSharedPreferences")
-            val config = xSharedPref.getString(KEY_CONFIG, "")!!
-            return try {
-                Configuration.fromJSON(config)
-            } catch (e: Exception) {
-                Log.d(TAG, "Failed to read config: $config, error: $e")
-                Configuration.default
+    @Volatile
+    var isModuleActive: Boolean = false
+        private set
+
+    private val sharedPref by lazy {
+        ContextAmbient.current.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    }
+
+    fun initService(context: Context, onStateChanged: ((Boolean) -> Unit)? = null) {
+        XposedServiceHelper.registerListener(object : XposedServiceHelper.OnServiceListener {
+            override fun onServiceBind(service: XposedService) {
+                sharedService = service
+                isModuleActive = true
+                Log.d(TAG, "Xposed service bound")
+                syncToRemote()
+                onStateChanged?.invoke(true)
             }
+
+            override fun onServiceDied(service: XposedService) {
+                sharedService = null
+                isModuleActive = false
+                Log.d(TAG, "Xposed service died")
+                onStateChanged?.invoke(false)
+            }
+        })
+    }
+
+    fun syncToRemote(jsonStr: String? = null) {
+        val service = sharedService ?: return
+        val configStr = jsonStr ?: sharedPref.getString(KEY_CONFIG, "") ?: ""
+        runCatching {
+            service.getRemotePreferences(PREF_NAME).edit { putString(KEY_CONFIG, configStr) }
+            Log.d(TAG, "Synced config to remote preferences: $configStr")
+        }.onFailure { e ->
+            Log.e(TAG, "Failed to sync config to remote preferences", e)
         }
     }
 
-    // Used in module app to read and edit configuration
-    @SuppressLint("WorldReadableFiles")
-    object APP {
-        private val sharedPref by lazy {
-            try {
-                ContextAmbient.current.getSharedPreferences(
-                    PREF_NAME,
-                    Context.MODE_WORLD_READABLE
-                )
-            } catch (e: Exception) {
-                ContextAmbient.current.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-            }
+    fun get(): Configuration {
+        val configStr = sharedPref.getString(KEY_CONFIG, "") ?: ""
+        return try {
+            Configuration.fromJSON(configStr)
+        } catch (e: Exception) {
+            Configuration.default
         }
+    }
 
-        fun isModuleActive(): Boolean = false
-
-        fun get(): Configuration {
-            val config = sharedPref.getString(KEY_CONFIG, "")!!
-            return try {
-                Configuration.fromJSON(config)
-            } catch (e: Exception) {
-                Configuration.default
-            }
-        }
-
-        fun save(config: Configuration) {
-            sharedPref.edit().putString(KEY_CONFIG, config.toJSON()).apply()
-            Log.d(TAG, "Config saved: ${config.toJSON()}")
-        }
+    fun save(config: Configuration) {
+        val json = config.toJSON()
+        sharedPref.edit(commit = true) { putString(KEY_CONFIG, json) }
+        Log.d(TAG, "Config saved locally: $json")
+        syncToRemote(json)
     }
 }

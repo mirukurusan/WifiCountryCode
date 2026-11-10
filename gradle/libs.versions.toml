@@ -8,9 +8,8 @@ composeBom = "2026.05.00"
 navigationCompose = "2.9.8"
 kotlinx-serialization-json = "1.11.0"
 kotlinx-serialization = "2.3.21"
-xposed = "82"
+libxposed = "102.0.0"
 uiTooling = "1.11.1"
-ezXHelper = "3.1.1-rc1"
 dependency-analysis = "3.11.0"
 
 [libraries]
@@ -25,11 +24,9 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-material-icons-extended = {  group = "androidx.compose.material", name = "material-icons-extended"}
 androidx-navigation-compose = {group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose"}
-xposed = { module = "de.robv.android.xposed:api", version.ref = "xposed" }
+libxposed-api = { module = "io.github.libxposed:api", version.ref = "libxposed" }
+libxposed-service = { module = "io.github.libxposed:service", version.ref = "libxposed" }
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "uiTooling" }
-ezXHelper-core = { module = "io.github.kyuubiran.ezxhelper:core", version.ref = "ezXHelper" }
-ezXHelper-api = { module = "io.github.kyuubiran.ezxhelper:xposed-api-82", version.ref = "ezXHelper" }
-ezXHelper-utils = { module = "io.github.kyuubiran.ezxhelper:android-utils", version.ref = "ezXHelper" }
 
 
 [plugins]

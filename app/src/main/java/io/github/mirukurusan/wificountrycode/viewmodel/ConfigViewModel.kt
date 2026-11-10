@@ -16,11 +16,17 @@ class ConfigViewModel(private val context: Context) : ViewModel() {
     val saveSuccess = mutableStateOf(false)
     val moduleActive = mutableStateOf(false)
 
+    init {
+        HookConfig.initService(context) { active ->
+            moduleActive.value = active
+        }
+    }
+
     // Load configuration
     fun loadConfig() {
         viewModelScope.launch(Dispatchers.IO) {
-            moduleActive.value = HookConfig.APP.isModuleActive()
-            val config = HookConfig.APP.get()
+            moduleActive.value = HookConfig.isModuleActive
+            val config = HookConfig.get()
             configState.toState(config)
         }
     }
@@ -29,7 +35,7 @@ class ConfigViewModel(private val context: Context) : ViewModel() {
     fun saveConfig() {
         viewModelScope.launch(Dispatchers.IO) {
             val configuration = Configuration(configState)
-            HookConfig.APP.save(configuration)
+            HookConfig.save(configuration)
             saveSuccess.value = true
         }
     }

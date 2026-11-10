@@ -63,10 +63,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     // Xposed
-    compileOnly(libs.xposed)
-    implementation(libs.ezXHelper.core)
-    implementation(libs.ezXHelper.api)
-    implementation(libs.ezXHelper.utils)
+    compileOnly(libs.libxposed.api)
+    implementation(libs.libxposed.service)
 
     // Debug
     debugImplementation(libs.androidx.ui.tooling)

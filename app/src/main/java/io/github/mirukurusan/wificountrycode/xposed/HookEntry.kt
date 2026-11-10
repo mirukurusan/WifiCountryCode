@@ -1,56 +1,36 @@
 package io.github.mirukurusan.wificountrycode.xposed
 
 import android.util.Log
-import de.robv.android.xposed.IXposedHookLoadPackage
-import de.robv.android.xposed.callbacks.XC_LoadPackage
-import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder
-import io.github.kyuubiran.ezxhelper.xposed.EzXposed
-import io.github.kyuubiran.ezxhelper.xposed.dsl.HookFactory.`-Static`.createHook
-import io.github.mirukurusan.wificountrycode.BuildConfig
+import io.github.libxposed.api.XposedModule
+import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
+import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
 import io.github.mirukurusan.wificountrycode.xposed.hook.WifiCountryCodeHook
 
-class HookEntry : IXposedHookLoadPackage {
+class HookEntry : XposedModule() {
 
-    override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam?) {
-        if (lpparam == null) return
-
-        // Self-hook: when loading the module's own app process,
-        // hook isModuleActive() to return true so the UI can detect activation
-        if (lpparam.packageName == BuildConfig.APPLICATION_ID) {
-            try {
-                MethodFinder.fromClass(
-                    "io.github.mirukurusan.wificountrycode.config.HookConfig\$APP",
-                    lpparam.classLoader
-                ).filterByName("isModuleActive").first().createHook {
-                    after { param ->
-                        param.result = true
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to self-hook isModuleActive", e)
-            }
-            return
-        }
-
-        EzXposed.initHandleLoadPackage(lpparam)
-        initHooks(
-            WifiCountryCodeHook
-        )
+    override fun onPackageReady(param: PackageReadyParam) {
     }
 
-    fun initHooks(vararg hooks: BaseHook) {
+    override fun onSystemServerStarting(param: SystemServerStartingParam) {
+        log(Log.INFO, TAG, "Package ready in system server (android)")
+        Log.i(TAG, "Package ready in system server (android)")
+        initHooks(param.classLoader, WifiCountryCodeHook)
+    }
+
+    private fun initHooks(classLoader: ClassLoader, vararg hooks: BaseHook) {
         for (h in hooks) {
             try {
                 if (h.isInit) continue
-                h.init()
+                h.init(this, classLoader)
                 h.isInit = true
             } catch (e: Exception) {
-                Log.e("HookEntry", "Failed to initialize hook: ${h.name}", e)
+                log(Log.ERROR, TAG, "Failed to initialize hook: ${h.name}", e)
+                Log.e(TAG, "Failed to initialize hook: ${h.name}", e)
             }
         }
     }
 
     companion object {
-        private const val TAG = "HookEntry"
+        private const val TAG = "WifiCountryCodeHookEntry"
     }
 }
