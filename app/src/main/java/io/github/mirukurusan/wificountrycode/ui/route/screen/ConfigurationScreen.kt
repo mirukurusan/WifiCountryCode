@@ -69,7 +69,7 @@ fun ConfigurationScreen(viewModel: ConfigViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.config_title)) }
+                title = { Text(stringResource(R.string.app_name)) }
             )
         }
     ) { paddingValues ->
