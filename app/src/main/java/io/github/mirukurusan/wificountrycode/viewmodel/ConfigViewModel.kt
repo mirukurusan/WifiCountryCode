@@ -1,71 +1,70 @@
 package io.github.mirukurusan.wificountrycode.viewmodel
 
-import android.content.Context
-import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.mirukurusan.wificountrycode.config.HookConfig
 import io.github.mirukurusan.wificountrycode.data.Configuration
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ConfigViewModel(private val context: Context) : ViewModel() {
+data class ConfigUiState(
+    val config: Configuration = Configuration.default,
+    val isModuleActive: Boolean = false,
+    val saveSuccess: Boolean = false
+)
 
-    val configState = State.default
-    val saveSuccess = mutableStateOf(false)
-    val moduleActive = mutableStateOf(false)
+class ConfigViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val _uiState = MutableStateFlow(ConfigUiState())
+    val uiState: StateFlow<ConfigUiState> = _uiState.asStateFlow()
 
     init {
-        HookConfig.initService(context) { active ->
-            moduleActive.value = active
+        HookConfig.initService(getApplication()) { active ->
+            _uiState.update { it.copy(isModuleActive = active) }
         }
     }
 
     // Load configuration
     fun loadConfig() {
         viewModelScope.launch(Dispatchers.IO) {
-            moduleActive.value = HookConfig.isModuleActive
+            val active = HookConfig.isModuleActive
             val config = HookConfig.get()
-            configState.toState(config)
+            _uiState.update {
+                it.copy(
+                    config = config,
+                    isModuleActive = active
+                )
+            }
+        }
+    }
+
+    // State update functions (Intents)
+    fun updateEnabled(enabled: Boolean) {
+        _uiState.update {
+            it.copy(config = it.config.copy(enabled = enabled))
+        }
+    }
+
+    fun updateCountryCode(code: String) {
+        _uiState.update {
+            it.copy(config = it.config.copy(countryCode = code.uppercase()))
         }
     }
 
     // Save configuration
     fun saveConfig() {
         viewModelScope.launch(Dispatchers.IO) {
-            val configuration = Configuration(configState)
-            HookConfig.save(configuration)
-            saveSuccess.value = true
+            HookConfig.save(_uiState.value.config)
+            _uiState.update { it.copy(saveSuccess = true) }
         }
     }
 
-    companion object {
-        private lateinit var applicationContext: Context
-
-        fun initialize(context: Context) {
-            applicationContext = context.applicationContext
-        }
-
-        fun provideFactory(): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return ConfigViewModel(applicationContext) as T
-            }
-        }
-    }
-
-    class State {
-        val enabled = mutableStateOf(false)
-        val countryCode = mutableStateOf(Configuration.DEFAULT_COUNTRY_CODE)
-
-        fun toState(config: Configuration) {
-            enabled.value = config.enabled
-            countryCode.value = config.countryCode
-        }
-
-        companion object {
-            val default = State()
-        }
+    fun resetSaveSuccess() {
+        _uiState.update { it.copy(saveSuccess = false) }
     }
 }

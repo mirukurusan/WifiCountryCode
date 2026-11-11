@@ -63,8 +63,7 @@ fun LauncherScreen() {
         "No ViewModelStoreOwner was provided via LocalViewModelStoreOwner"
     }
     val configViewModel: ConfigViewModel = viewModel(
-        viewModelStoreOwner = viewModelStoreOwner,
-        factory = ConfigViewModel.provideFactory()
+        viewModelStoreOwner = viewModelStoreOwner
     )
 
     @Composable

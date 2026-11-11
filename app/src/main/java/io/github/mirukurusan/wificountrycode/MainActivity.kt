@@ -18,7 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import io.github.mirukurusan.wificountrycode.ui.GlobalSnackbarHost
 import io.github.mirukurusan.wificountrycode.ui.route.NavigationHost
 import io.github.mirukurusan.wificountrycode.ui.theme.WifiCountryCodeTheme
-import io.github.mirukurusan.wificountrycode.viewmodel.ConfigViewModel
+
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,7 +28,6 @@ class MainActivity : AppCompatActivity() {
             App()
         }
         AppDependencies.initialize(applicationContext)
-        ConfigViewModel.initialize(applicationContext)
     }
 }
 

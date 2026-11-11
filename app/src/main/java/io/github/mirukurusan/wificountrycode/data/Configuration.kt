@@ -1,6 +1,5 @@
 package io.github.mirukurusan.wificountrycode.data
 
-import io.github.mirukurusan.wificountrycode.viewmodel.ConfigViewModel
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -26,9 +25,4 @@ data class Configuration(
     }
 
     fun toJSON(): String = Json.encodeToString(serializer(), this)
-
-    constructor(state: ConfigViewModel.State) : this() {
-        enabled = state.enabled.value
-        countryCode = state.countryCode.value.ifEmpty { DEFAULT_COUNTRY_CODE }
-    }
 }

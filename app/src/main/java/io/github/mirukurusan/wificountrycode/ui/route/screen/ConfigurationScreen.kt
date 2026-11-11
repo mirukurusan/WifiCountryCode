@@ -30,6 +30,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,16 +52,17 @@ import io.github.mirukurusan.wificountrycode.viewmodel.ConfigViewModel
 @Composable
 fun ConfigurationScreen(viewModel: ConfigViewModel) {
     val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadConfig()
     }
 
     // Listen for save success and show toast
-    LaunchedEffect(viewModel.saveSuccess.value) {
-        if (viewModel.saveSuccess.value) {
+    LaunchedEffect(uiState.saveSuccess) {
+        if (uiState.saveSuccess) {
             Toast.makeText(context, "Configuration saved. Restart system to take effect.", Toast.LENGTH_LONG).show()
-            viewModel.saveSuccess.value = false // Reset the state
+            viewModel.resetSaveSuccess()
         }
     }
 
@@ -81,15 +84,15 @@ fun ConfigurationScreen(viewModel: ConfigViewModel) {
             // Module Status Section
             SmallTitle { stringResource(R.string.module_status) }
             ModuleActivationStatus(
-                active = viewModel.moduleActive.value
+                active = uiState.isModuleActive
             )
 
             Spacer(modifier = Modifier.size(16.dp))
 
             ModuleStatusCard(
-                enabled = viewModel.configState.enabled.value,
-                onEnabledChange = { viewModel.configState.enabled.value = it },
-                moduleActive = viewModel.moduleActive.value
+                enabled = uiState.config.enabled,
+                onEnabledChange = { viewModel.updateEnabled(it) },
+                moduleActive = uiState.isModuleActive
             )
 
             Spacer(modifier = Modifier.size(24.dp))
@@ -97,17 +100,17 @@ fun ConfigurationScreen(viewModel: ConfigViewModel) {
             // Country Code Section
             SmallTitle { stringResource(R.string.config_country_code) }
             CountryCodeInput(
-                value = viewModel.configState.countryCode.value,
-                onValueChange = { viewModel.configState.countryCode.value = it.uppercase() },
-                enabled = viewModel.moduleActive.value && viewModel.configState.enabled.value
+                value = uiState.config.countryCode,
+                onValueChange = { viewModel.updateCountryCode(it) },
+                enabled = uiState.isModuleActive && uiState.config.enabled
             )
 
             Spacer(modifier = Modifier.size(24.dp))
 
             // Quick Select Buttons
             QuickCountryCodeSelect(
-                onCodeSelected = { viewModel.configState.countryCode.value = it },
-                enabled = viewModel.moduleActive.value && viewModel.configState.enabled.value
+                onCodeSelected = { viewModel.updateCountryCode(it) },
+                enabled = uiState.isModuleActive && uiState.config.enabled
             )
 
             Spacer(modifier = Modifier.size(32.dp))
@@ -116,7 +119,7 @@ fun ConfigurationScreen(viewModel: ConfigViewModel) {
             Button(
                 onClick = { viewModel.saveConfig() },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = viewModel.moduleActive.value
+                enabled = uiState.isModuleActive
             ) {
                 Icon(Icons.Filled.Check, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
