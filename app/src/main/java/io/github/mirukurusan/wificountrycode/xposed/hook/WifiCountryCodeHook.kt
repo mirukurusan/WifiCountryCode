@@ -78,8 +78,7 @@ object WifiCountryCodeHook : BaseHook() {
                                 }
                                 val targetCode = config.countryCode
                                 val originalArg = if (chain.args.isNotEmpty()) chain.args[0] else null
-                                Log.i(TAG, "Intercepted $methodName(original=$originalArg) -> forcing $targetCode")
-                                module.log(Log.INFO, TAG, "Intercepted $methodName(original=$originalArg) -> forcing $targetCode")
+                                Log.d(TAG, "Intercepted $methodName(original=$originalArg) -> forcing $targetCode")
 
                                 val newArgs = chain.args.toTypedArray()
                                 if (newArgs.isNotEmpty() && method.parameterTypes[0] == String::class.java) {
@@ -99,8 +98,7 @@ object WifiCountryCodeHook : BaseHook() {
                                     return@intercept chain.proceed()
                                 }
                                 val targetCode = config.countryCode
-                                Log.i(TAG, "Intercepted $methodName() -> returning $targetCode")
-                                module.log(Log.INFO, TAG, "Intercepted $methodName() -> returning $targetCode")
+                                Log.d(TAG, "Intercepted $methodName() -> returning $targetCode")
                                 targetCode
                             }
                             Log.i(TAG, "Successfully hooked method: $methodName in $wifiCountryCodeClass")

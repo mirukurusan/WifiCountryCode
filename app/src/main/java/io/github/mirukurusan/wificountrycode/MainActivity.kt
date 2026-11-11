@@ -27,7 +27,6 @@ class MainActivity : AppCompatActivity() {
         setContent {
             App()
         }
-        AppDependencies.initialize(applicationContext)
     }
 }
 

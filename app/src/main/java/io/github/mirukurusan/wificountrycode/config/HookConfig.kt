@@ -1,11 +1,11 @@
 package io.github.mirukurusan.wificountrycode.config
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.core.content.edit
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
-import io.github.mirukurusan.wificountrycode.ContextAmbient
 import io.github.mirukurusan.wificountrycode.data.Configuration
 
 /**
@@ -20,14 +20,20 @@ object HookConfig {
     private var sharedService: XposedService? = null
 
     @Volatile
+    private var sharedPref: SharedPreferences? = null
+
+    @Volatile
     var isModuleActive: Boolean = false
         private set
 
-    private val sharedPref by lazy {
-        ContextAmbient.current.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-    }
-
     fun initService(context: Context, onStateChanged: ((Boolean) -> Unit)? = null) {
+        if (sharedPref == null) {
+            synchronized(this) {
+                if (sharedPref == null) {
+                    sharedPref = context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                }
+            }
+        }
         XposedServiceHelper.registerListener(object : XposedServiceHelper.OnServiceListener {
             override fun onServiceBind(service: XposedService) {
                 sharedService = service
@@ -48,7 +54,8 @@ object HookConfig {
 
     fun syncToRemote(jsonStr: String? = null) {
         val service = sharedService ?: return
-        val configStr = jsonStr ?: sharedPref.getString(KEY_CONFIG, "") ?: ""
+        val pref = sharedPref ?: return
+        val configStr = jsonStr ?: pref.getString(KEY_CONFIG, "") ?: ""
         runCatching {
             val remotePrefs = service.getRemotePreferences(PREF_NAME)
             remotePrefs.edit(commit = true) { putString(KEY_CONFIG, configStr) }
@@ -59,7 +66,8 @@ object HookConfig {
     }
 
     fun get(): Configuration {
-        val configStr = sharedPref.getString(KEY_CONFIG, "") ?: ""
+        val pref = sharedPref ?: return Configuration.default
+        val configStr = pref.getString(KEY_CONFIG, "") ?: ""
         return try {
             Configuration.fromJSON(configStr)
         } catch (e: Exception) {
@@ -69,7 +77,8 @@ object HookConfig {
 
     fun save(config: Configuration) {
         val json = config.toJSON()
-        sharedPref.edit(commit = true) { putString(KEY_CONFIG, json) }
+        val pref = sharedPref ?: return
+        pref.edit(commit = true) { putString(KEY_CONFIG, json) }
         Log.d(TAG, "Config saved locally: $json")
         syncToRemote(json)
     }
