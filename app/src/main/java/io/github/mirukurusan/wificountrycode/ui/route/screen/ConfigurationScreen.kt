@@ -58,7 +58,7 @@ fun ConfigurationScreen(viewModel: ConfigViewModel) {
     // Listen for save success and show toast
     LaunchedEffect(viewModel.saveSuccess.value) {
         if (viewModel.saveSuccess.value) {
-            Toast.makeText(context, "Configuration saved", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Configuration saved. Restart system to take effect.", Toast.LENGTH_LONG).show()
             viewModel.saveSuccess.value = false // Reset the state
         }
     }

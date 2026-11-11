@@ -12,7 +12,7 @@ import io.github.mirukurusan.wificountrycode.data.Configuration
  * Hook configuration storage manager using LibXposed RemotePreferences
  */
 object HookConfig {
-    const val TAG = "HookConfig"
+    const val TAG = "WifiCountryCodeConf"
     const val PREF_NAME = "wifi_country_code_config"
     const val KEY_CONFIG = "config"
 
@@ -50,7 +50,8 @@ object HookConfig {
         val service = sharedService ?: return
         val configStr = jsonStr ?: sharedPref.getString(KEY_CONFIG, "") ?: ""
         runCatching {
-            service.getRemotePreferences(PREF_NAME).edit { putString(KEY_CONFIG, configStr) }
+            val remotePrefs = service.getRemotePreferences(PREF_NAME)
+            remotePrefs.edit(commit = true) { putString(KEY_CONFIG, configStr) }
             Log.d(TAG, "Synced config to remote preferences: $configStr")
         }.onFailure { e ->
             Log.e(TAG, "Failed to sync config to remote preferences", e)
